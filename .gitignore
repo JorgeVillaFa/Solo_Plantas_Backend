@@ -1,0 +1,43 @@
+# Node.js dependencies
+/node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.*  # If you have multiple env files for different environments
+
+# Optional: TypeScript build output
+/dist/
+/build/
+
+# Optional: Next.js build output (if using Next.js)
+.next/
+
+# Optional: Vue.js build output (if using Vue.js)
+/dist/
+
+# Dependency directories
+/bower_components/
+
+# IDEs and Editors
+.vscode/
+/.idea/
+/*.sublime-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# npm package lock files (optional, can be included if you want deterministic builds)
+# package-lock.json
+# yarn.lock
+
+# Optional: Coverage reports (if using testing tools)
+coverage/
+
+# Optional: Temporary files from your editor (e.g., VSCode, Sublime Text)
+*.swp

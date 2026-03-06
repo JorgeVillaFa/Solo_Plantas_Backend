@@ -1,0 +1,56 @@
+# ===========================
+# Solo Plantas — Docker Compose (Development)
+# Spins up:
+#   - PostgreSQL 16 (replaces Azure SQL for local dev)
+#   - solo-plantas-api (Express backend)
+# ===========================
+
+version: "3.9"
+
+services:
+  # ---- PostgreSQL Database ----
+  db:
+    image: postgres:16-alpine
+    container_name: solo-plantas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: soloplantasuser
+      POSTGRES_PASSWORD: soloplantaspass
+      POSTGRES_DB: soloplantasdb
+    ports:
+      - "5432:5432"           # Expose to host so Prisma Studio / DBeaver can connect
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soloplantasuser -d soloplantasdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---- Express API ----
+  api:
+    build:
+      context: .
+      target: builder             # Use builder stage so we have ts-node-dev for hot reload
+    container_name: solo-plantas-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env                      # Load all environment variables from .env
+    environment:
+      # Override DATABASE_URL to point at the docker service name "db"
+      DATABASE_URL: "postgresql://soloplantasuser:soloplantaspass@db:5432/soloplantasdb?schema=public"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src             # Hot reload: mount source so ts-node-dev picks up changes
+      - ./prisma:/app/prisma
+    command: >
+      sh -c "npx prisma migrate dev --name init &&
+             npm run dev"
+
+volumes:
+  postgres_data:
+    driver: local
