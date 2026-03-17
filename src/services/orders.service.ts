@@ -29,12 +29,13 @@ export async function getUserOrders(userId: string) {
       trackingNumber: true,
       createdAt: true,
       updatedAt: true,
+      activatedAt: true,
       plant: {
         select: {
           id: true,
           commonName: true,
           scientificName: true,
-          imageUrl: true,
+          illustrationName: true,
           priceInCents: true,
         },
       },
