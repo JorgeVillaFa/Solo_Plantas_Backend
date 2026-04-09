@@ -22,10 +22,10 @@ async function main() {
   // ---- Plant Genetics (L-System seeds) ----
 
   const geneticsPrimavera = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000001' },
+    where: { id: '3fa85f64-5717-4562-b3fc-2c963f66afa6' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000001',
+      id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
       axiom: 'X',
       rules: { X: 'F-[[X]+X]+F[+FX]-X', F: 'FF' },
       branchAngle: 22.5,
@@ -54,10 +54,10 @@ async function main() {
   });
 
   const geneticsGuachumil = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000002' },
+    where: { id: 'b33dcc62-3462-11f1-8d3a-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000002',
+      id: 'b33dcc62-3462-11f1-8d3a-345a601cd3cc',
       axiom: 'X',
       rules: { X: 'F[+X]F[-X]+X', F: 'FF' },
       branchAngle: 35.0,
@@ -86,10 +86,10 @@ async function main() {
   });
 
   const geneticsMezquite = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000003' },
+    where: { id: 'c26b86da-00f3-4be6-963d-f50a1e3026e8' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000003',
+      id: 'c26b86da-00f3-4be6-963d-f50a1e3026e8',
       axiom: 'X',
       rules: { X: 'F-[[X]+X]+F[+FX]-X', F: 'FF' },
       branchAngle: 38.0,
@@ -118,10 +118,10 @@ async function main() {
   });
 
   const geneticsSalvia = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000004' },
+    where: { id: 'c9af1d49-3462-11f1-806b-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000004',
+      id: 'c9af1d49-3462-11f1-806b-345a601cd3cc',
       axiom: 'X',
       rules: { X: 'F-[[X]+X]+F[+FX]-X', F: 'FF' },
       branchAngle: 18.0,
@@ -150,10 +150,10 @@ async function main() {
   });
 
   const geneticsTronadora = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000005' },
+    where: { id: '36062053-323e-4c64-9d79-e8124b43966f' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000005',
+      id: '36062053-323e-4c64-9d79-e8124b43966f',
       axiom: 'X',
       rules: { X: 'F-[[X]+X]+F[+FX]-X', F: 'FF' },
       branchAngle: 28.0,
@@ -182,10 +182,10 @@ async function main() {
   });
 
   const geneticsCempasuchil = await prisma.plantGenetics.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000006' },
+    where: { id: 'e55a4dfb-3462-11f1-8e01-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000006',
+      id: 'e55a4dfb-3462-11f1-8e01-345a601cd3cc',
       axiom: 'X',
       rules: { X: 'F[+X][-X]F[-X]+X', F: 'FF' },
       branchAngle: 42.0,
@@ -216,10 +216,10 @@ async function main() {
   // ---- Plants ----
 
   const plant1 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000010' },
+    where: { id: '4eedc0de-3445-11f1-81bf-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000010',
+      id: '4eedc0de-3445-11f1-81bf-345a601cd3cc',
       commonName: 'Primavera',
       scientificName: 'Roseodendron donnell-smithii',
       priceInCents: 49900,
@@ -249,10 +249,10 @@ async function main() {
   });
 
   const plant2 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000011' },
+    where: { id: '1a1c605b-ebf8-42fd-87e5-44cd08e6fedd' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000011',
+      id: '1a1c605b-ebf8-42fd-87e5-44cd08e6fedd',
       commonName: 'Guachumil',
       scientificName: 'Leucaena macrophylla',
       priceInCents: 39900,
@@ -282,10 +282,10 @@ async function main() {
   });
 
   const plant3 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000012' },
+    where: { id: '041f5bca-3463-11f1-9b6e-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000012',
+      id: '041f5bca-3463-11f1-9b6e-345a601cd3cc',
       commonName: 'Mezquite',
       scientificName: 'Prosopis laevigata',
       priceInCents: 39900,
@@ -315,10 +315,10 @@ async function main() {
   });
 
   const plant4 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000013' },
+    where: { id: 'dec2732f-e763-495e-ad88-2b417632a8c9' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000013',
+      id: 'dec2732f-e763-495e-ad88-2b417632a8c9',
       commonName: 'Salvia',
       scientificName: 'Salvia mexicana',
       priceInCents: 24900,
@@ -348,10 +348,10 @@ async function main() {
   });
 
   const plant5 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000014' },
+    where: { id: '14c2b391-3463-11f1-b08f-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000014',
+      id: '14c2b391-3463-11f1-b08f-345a601cd3cc',
       commonName: 'Tronadora',
       scientificName: 'Tecoma stans',
       priceInCents: 24900,
@@ -381,10 +381,10 @@ async function main() {
   });
 
   const plant6 = await prisma.plant.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000015' },
+    where: { id: '32c7b089-0ccc-46ec-ab1a-cacdab50ce64' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000015',
+      id: '32c7b089-0ccc-46ec-ab1a-cacdab50ce64',
       commonName: 'Cempasúchil',
       scientificName: 'Tagetes erecta',
       priceInCents: 19900,
@@ -415,10 +415,10 @@ async function main() {
 
   // ---- Nurseries ----
   await prisma.nursery.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000020' },
+    where: { id: 'feaf12ef-27a9-4083-b7d3-5f4f22bf3c72' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000020',
+      id: 'feaf12ef-27a9-4083-b7d3-5f4f22bf3c72',
       name: 'Bosque Urbano Extra A.C.',
       address: 'Av. Patria 1000, Bosque Los Colomos, Guadalajara',
       description: 'NGO offering free plant adoption with just your ID. Take up to 2 trees or plants per visit. Mon-Fri 9am-4pm, Sat 9am-2pm.',
@@ -430,10 +430,10 @@ async function main() {
   });
 
   await prisma.nursery.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000021' },
+    where: { id: '2733f36f-3463-11f1-a2d3-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000021',
+      id: '2733f36f-3463-11f1-a2d3-345a601cd3cc',
       name: 'Vivero Estatal Colomos – SEMADET',
       address: 'Bosque Los Colomos, Guadalajara',
       description: "State government nursery donating forest, fruit, and ornamental trees for urban reforestation. Open to citizens, schools, and municipalities via request.",
@@ -445,10 +445,10 @@ async function main() {
   });
 
   await prisma.nursery.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000022' },
+    where: { id: 'b1cc5147-eff4-43b6-b793-153d04ba88cf' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000022',
+      id: 'b1cc5147-eff4-43b6-b793-153d04ba88cf',
       name: 'Vivero Municipal de Zapopan',
       address: 'Av. Tesistán 801, Santa Margarita, Zapopan',
       description: 'Free tree and plant donations for Zapopan residents. Requires a written request, ID, and photos of the planting area.',
@@ -460,10 +460,10 @@ async function main() {
   });
 
   await prisma.nursery.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000023' },
+    where: { id: '43c7e025-3463-11f1-a492-345a601cd3cc' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000023',
+      id: '43c7e025-3463-11f1-a492-345a601cd3cc',
       name: 'FIPRODEFO State Forest Nursery',
       address: 'Av. Patria 299, Col. Niños Héroes, Guadalajara',
       description: 'State forestry trust producing and distributing native plants (pines, oaks, palo dulce) for reforestation. Serves communities, municipalities, and civil organizations.',
@@ -475,10 +475,10 @@ async function main() {
   });
 
   await prisma.nursery.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000024' },
+    where: { id: 'fe98da66-bf5c-47b7-a642-36ec7bf7d58e' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000024',
+      id: 'fe98da66-bf5c-47b7-a642-36ec7bf7d58e',
       name: 'OPD Bosque La Primavera',
       address: 'Av. Vallarta 6503, Local E-38, Ciudad Granja, Zapopan',
       description: 'Public agency managing La Primavera protected forest. Runs native plant reforestation drives and environmental education programs open to volunteers.',

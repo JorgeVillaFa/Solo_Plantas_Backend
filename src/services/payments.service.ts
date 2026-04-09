@@ -72,6 +72,10 @@ export async function createPaymentIntent(
     currency: 'mxn',
     metadata: { userId, plantId },
     description: `Solo Plantas — ${plant.commonName}`,
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: 'never',
+    },
   });
 
   // Persist pending order
@@ -130,7 +134,10 @@ export async function handleWebhook(
     await confirmPayment(intent.id);
   }
 
-  // Other event types (payment_intent.payment_failed, etc.) can be handled here
+  if (event.type === 'payment_intent.payment_failed') {
+    const intent = event.data.object as Stripe.PaymentIntent;
+    await cancelPayment(intent.id);
+  }
 }
 
 /**
@@ -155,7 +162,7 @@ async function confirmPayment(stripePaymentIntentId: string): Promise<void> {
       where: { plantId: order.plantId },
       data: {
         reserved: { decrement: 1 },
-        sold:     { increment: 1 },
+        sold: { increment: 1 },
       },
     }),
 
@@ -171,6 +178,35 @@ async function confirmPayment(stripePaymentIntentId: string): Promise<void> {
       update: {
         owned: true,
         purchasedAt: new Date(),
+      },
+    }),
+  ]);
+}
+
+
+/**
+ * Cancels a failed payment: marks order as cancelled and restores inventory.
+ */
+async function cancelPayment(stripePaymentIntentId: string): Promise<void> {
+  const order = await prisma.order.findFirst({
+    where: { stripePaymentIntentId },
+  });
+
+  if (!order || order.status !== 'pending') return; // Idempotent
+
+  await prisma.$transaction([
+    // Update order to cancelled
+    prisma.order.update({
+      where: { id: order.id },
+      data: { status: 'cancelled', updatedAt: new Date() },
+    }),
+
+    // Return reserved inventory back to available stock
+    prisma.inventory.updateMany({
+      where: { plantId: order.plantId },
+      data: {
+        reserved: { decrement: 1 },
+        stock: { increment: 1 },
       },
     }),
   ]);

@@ -153,12 +153,7 @@ pending → confirmed → shipped → delivered → activated
 - Sin tests unitarios para servicios
 - El pipeline de Docker build no valida tests
 
-#### 2. Webhook: fallos de pago sin manejar
-- `payment_intent.payment_failed` no esta implementado (comentado como TODO en `payments.service.ts:133`)
-- Si un pago falla, la Order queda en estado `pending` indefinidamente en la DB
-- No hay logica de cancelacion de orden ni liberacion de inventario reservado en caso de fallo de pago
-
-#### 3. Transiciones de estado de orden no expuestas
+#### 2. Transiciones de estado de orden no expuestas
 - El flujo `confirmed → shipped → delivered` no tiene endpoints API
 - Solo `activated` tiene endpoint (via QR scan)
 - Para marcar una orden como `shipped` o `delivered` hay que hacerlo manualmente en la DB o via Prisma Studio
@@ -168,7 +163,7 @@ pending → confirmed → shipped → delivered → activated
 
 ### P2 — Importante / Afecta experiencia
 
-#### 4. Sin endpoints de administracion
+#### 3. Sin endpoints de administracion
 No existe ninguna capa de admin/operador. Las siguientes operaciones solo son posibles via Prisma Studio o SQL directo:
 - Agregar/editar/eliminar plantas del catalogo
 - Actualizar stock de inventario
@@ -176,21 +171,21 @@ No existe ninguna capa de admin/operador. Las siguientes operaciones solo son po
 - Actualizar tracking number de ordenes (`Order.trackingNumber` existe en el schema pero no hay endpoint)
 - Cambiar estado de orden a `shipped` / `delivered`
 
-#### 5. Sin endpoint GET /cart
+#### 4. Sin endpoint GET /cart
 - No hay endpoint para listar las reservas activas del usuario
 - El cliente iOS no puede consultar el estado del carrito via API; debe trackear localmente lo que reservo
 - Solo puede crear (`POST /reserve`) y liberar (`DELETE /reserve/:id`)
 
-#### 6. Sin paginacion
+#### 5. Sin paginacion
 - `GET /catalog` devuelve TODAS las plantas sin limite
 - `GET /orders` devuelve TODA la historia del usuario sin limite
 - A escala pueden ser respuestas grandes
 
-#### 7. Sin filtros/busqueda en catalogo
+#### 6. Sin filtros/busqueda en catalogo
 - No hay `?search=`, `?season=`, `?minPrice=`, `?maxPrice=` en `GET /catalog`
 - Toda la filtracion debe hacerse en el cliente
 
-#### 8. Sin gestion de perfil de usuario
+#### 7. Sin gestion de perfil de usuario
 - No hay `PATCH /auth/me` para cambiar email o contrasena
 - No hay `DELETE /auth/me` para eliminar cuenta
 
@@ -198,36 +193,36 @@ No existe ninguna capa de admin/operador. Las siguientes operaciones solo son po
 
 ### P3 — Mejoras / Deuda tecnica
 
-#### 9. Sin flujo de reset de contrasena
+#### 8. Sin flujo de reset de contrasena
 - No hay `POST /auth/forgot-password`
 - No hay `POST /auth/reset-password`
 - Requiere integracion con servicio de email
 
-#### 10. Sin notificaciones por email
+#### 9. Sin notificaciones por email
 - No hay proveedor de email configurado (SendGrid, Resend, SES, etc.)
 - Flujos que deberian enviar email: confirmacion de orden, envio, entrega
 
-#### 11. Sin mecanismo de refresh token
+#### 10. Sin mecanismo de refresh token
 - Token unico JWT con vida de 7 dias (`JWT_EXPIRES_IN=7d`)
 - Al expirar, el usuario debe re-loguearse; no hay refresh token
 - Para la app iOS puede ser aceptable, pero vale documentarlo
 
-#### 12. `CartReservation.userId` sin FK relacion en Prisma
+#### 11. `CartReservation.userId` sin FK relacion en Prisma
 - En `schema.prisma`, `CartReservation.userId` es `String @db.Uuid` sin `@relation`
 - No hay relacion Prisma hacia `User`; sin cascade delete si se elimina un usuario
 - El campo `userId` en `CartReservation` no aparece en `User.cartReservations` (no existe esa relacion)
 
-#### 13. Patron roto en nurseries
+#### 12. Patron roto en nurseries
 - `nurseries.controller.ts` llama `prisma` directamente (sin capa service)
 - Todos los demas modulos siguen el patron controller → service
 - Menor pero inconsistente con la arquitectura del proyecto
 
-#### 14. Sin migraciones de DB en el repo
+#### 13. Sin migraciones de DB en el repo
 - Solo existe `prisma/schema.prisma`; no hay carpeta `prisma/migrations/`
 - Las migraciones se crean con `prisma migrate dev` pero no estan commiteadas
 - En produccion se usa `prisma migrate deploy` pero sin historial en el repo el estado es ambiguo
 
-#### 15. `swaggerSpec` sin tipado fuerte
+#### 14. `swaggerSpec` sin tipado fuerte
 - El objeto en `src/config/swagger.ts` esta tipado como `object` implicito
 - Podria usar `OpenAPIV3.Document` de `openapi-types` para validacion en compile-time
 
