@@ -5,9 +5,9 @@
  * Run: npx ts-node prisma/seed.ts  (or: npm run prisma:seed)
  *
  * Seeds:
- *   - 2 PlantGenetics records (L-System definitions)
- *   - 3 Plant records with inventory
- *   - 2 Nursery pickup locations
+ *   - 6 PlantGenetics records (L-System definitions)
+ *   - 6 Plant records with inventory
+ *   - 5 Nursery pickup locations
  * ===========================
  */
 import * as dotenv from 'dotenv';
@@ -220,9 +220,10 @@ async function main() {
     update: {},
     create: {
       id: '4eedc0de-3445-11f1-81bf-345a601cd3cc',
-      commonName: 'Primavera',
+      name: 'Primavera',
       scientificName: 'Roseodendron donnell-smithii',
-      priceInCents: 49900,
+      price: 49900,
+      priceActive: true,
       description: 'A magnificent canopy tree reaching up to 30 meters, exploding with clustered yellow flowers that scatter winged seeds into the wind.',
       illustrationName: 'primavera',
       ecologicalRole: 'Provides crucial high canopy shelter and early season nectar for native insects.',
@@ -240,7 +241,7 @@ async function main() {
         'Place the tree in the hole, ensuring the base of the trunk is level with the surrounding soil.',
         'Fill the hole with native soil, tamping it down gently to remove air pockets.',
         'Water deeply immediately after planting, then water once a week during the first dry season.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsPrimavera.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -253,9 +254,10 @@ async function main() {
     update: {},
     create: {
       id: '1a1c605b-ebf8-42fd-87e5-44cd08e6fedd',
-      commonName: 'Guachumil',
+      name: 'Guachumil',
       scientificName: 'Leucaena macrophylla',
-      priceInCents: 39900,
+      price: 39900,
+      priceActive: true,
       description: 'A highly resilient tree with a wide crown, featuring fragrant white puffball flowers and twisted pendant pods.',
       illustrationName: 'guachumil',
       ecologicalRole: 'Highly adaptable soil stabilizer that resists prolonged droughts and urban conditions.',
@@ -273,7 +275,7 @@ async function main() {
         'Plant the seedling at the same depth it was growing in its nursery pot.',
         'Apply a light layer of mulch around the base to retain moisture, keeping it away from the trunk.',
         'Cover the young plant with a frost blanket during unexpectedly cold winter nights.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsGuachumil.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -286,9 +288,10 @@ async function main() {
     update: {},
     create: {
       id: '041f5bca-3463-11f1-9b6e-345a601cd3cc',
-      commonName: 'Mezquite',
+      name: 'Mezquite',
       scientificName: 'Prosopis laevigata',
-      priceInCents: 39900,
+      price: 39900,
+      priceActive: true,
       description: 'A legendary, deeply rooted tree with cracked blackish bark, thorny branches, and fragrant cream-yellowish flowers.',
       illustrationName: 'mesquite',
       ecologicalRole: 'A keystone desert species whose wide ecological range allows it to shelter countless wildlife species.',
@@ -306,7 +309,7 @@ async function main() {
         'Backfill with the original soil without adding rich compost, as they prefer native, arid soil.',
         'Water thoroughly at planting, then restrict watering to encourage the roots to seek deep water.',
         'Prune only broken or crossing branches during its dormant winter season.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsMezquite.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -319,9 +322,10 @@ async function main() {
     update: {},
     create: {
       id: 'dec2732f-e763-495e-ad88-2b417632a8c9',
-      commonName: 'Salvia',
+      name: 'Salvia',
       scientificName: 'Salvia mexicana',
-      priceInCents: 24900,
+      price: 24900,
+      priceActive: true,
       description: 'An ancient native resident featuring tall, straight vertical stalks that end in striking deep purple flower spikes.',
       illustrationName: 'salvia',
       ecologicalRole: 'A crucial, high value nectar source for migrating hummingbirds across Jalisco.',
@@ -339,7 +343,7 @@ async function main() {
         'Backfill the soil and water the base until the soil is fully saturated.',
         'Check the soil moisture every few days, watering only when the top inch feels completely dry.',
         'Cut the tall stalks back by a third after the fall blooming season ends to encourage new growth.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsSalvia.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -352,9 +356,10 @@ async function main() {
     update: {},
     create: {
       id: '14c2b391-3463-11f1-b08f-345a601cd3cc',
-      commonName: 'Tronadora',
+      name: 'Tronadora',
       scientificName: 'Tecoma stans',
-      priceInCents: 24900,
+      price: 24900,
+      priceActive: true,
       description: 'A beautiful, vibrant shrub that explodes with bright yellow, trumpet-shaped flowers. Easily pruned to fit any garden.',
       illustrationName: 'tronadora',
       ecologicalRole: 'Provides a continuous source of nectar for native bees and local bird populations.',
@@ -372,7 +377,7 @@ async function main() {
         'Water the shrub twice a week for the first month to help the root system establish.',
         'Reduce watering to once a week once established, letting the soil dry between waterings.',
         'Prune the shrub heavily in late winter to shape it and encourage bushy spring growth.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsTronadora.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -385,9 +390,10 @@ async function main() {
     update: {},
     create: {
       id: '32c7b089-0ccc-46ec-ab1a-cacdab50ce64',
-      commonName: 'Cempasúchil',
+      name: 'Cempasúchil',
       scientificName: 'Tagetes erecta',
-      priceInCents: 19900,
+      price: 19900,
+      priceActive: true,
       description: 'The iconic Mexican Marigold. A bushy, structural plant with brilliant orange blooms deeply tied to Mexican heritage.',
       illustrationName: 'cempasuchil',
       ecologicalRole: 'Releases natural compounds into the soil that protect neighboring plants from harmful nematodes.',
@@ -405,7 +411,7 @@ async function main() {
         'Water the soil gently at the base to keep it moist but never soggy.',
         'Pinch off the top growing tips when the plant is young to encourage a wider, bushier shape.',
         'Remove dead or fading orange flowers regularly to force the plant to produce new blooms.',
-      ].join('\n'),
+      ],
       lSeedId: geneticsCempasuchil.id,
       inventory: {
         create: { stock: 50, reserved: 0, sold: 0 },
@@ -491,8 +497,8 @@ async function main() {
 
   console.log('Seed complete.');
   console.log(`  PlantGenetics: 6`);
-  console.log(`  Plants: 6 (${plant1.commonName}, ${plant2.commonName}, ${plant3.commonName} , ${plant4.commonName}, ${plant5.commonName}, ${plant6.commonName})`);
-  console.log(`  Nurseries: 2`);
+  console.log(`  Plants: 6 (${plant1.name}, ${plant2.name}, ${plant3.name} , ${plant4.name}, ${plant5.name}, ${plant6.name})`);
+  console.log(`  Nurseries: 5`);
 }
 
 main()

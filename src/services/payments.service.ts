@@ -56,7 +56,7 @@ export async function createPaymentIntent(
   // Fetch plant price
   const plant = await prisma.plant.findUnique({
     where: { id: plantId },
-    select: { id: true, priceInCents: true, commonName: true },
+    select: { id: true, price: true, name: true },
   });
 
   if (!plant) {
@@ -64,14 +64,14 @@ export async function createPaymentIntent(
   }
 
   const shippingFeeCents = shippingType === 'delivery' ? DELIVERY_FEE_CENTS : 0;
-  const totalAmountCents = plant.priceInCents + shippingFeeCents;
+  const totalAmountCents = plant.price + shippingFeeCents;
 
   // Create Stripe PaymentIntent
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalAmountCents,
     currency: 'mxn',
     metadata: { userId, plantId },
-    description: `Solo Plantas — ${plant.commonName}`,
+    description: `Solo Plantas — ${plant.name}`,
     automatic_payment_methods: {
       enabled: true,
       allow_redirects: 'never',

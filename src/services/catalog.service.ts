@@ -15,6 +15,7 @@ import axios from 'axios';
 import { prisma } from '../config/database';
 import { env } from '../config/env';
 import { AppError } from '../middlewares/error.middleware';
+import { serializePrice } from '../utils'
 
 /**
  * Returns all plants with inventory status and whether the user owns each one.
@@ -30,15 +31,15 @@ export async function getAllPlants(userId: string) {
         select: { owned: true },
       },
     },
-    orderBy: { commonName: 'asc' },
+    orderBy: { name: 'asc' },
   });
 
   // Flatten owned status into the plant object
   return plants.map((p) => ({
     id: p.id,
-    commonName: p.commonName,
+    name: p.name,
     scientificName: p.scientificName,
-    priceInCents: p.priceInCents,
+    price: serializePrice(p.price, p.priceActive),
     description: p.description,
     illustrationName: p.illustrationName,
     stock: p.inventory?.stock ?? 0,
@@ -56,6 +57,7 @@ export async function getPlantById(plantId: string, userId: string) {
   const plant = await prisma.plant.findUnique({
     where: { id: plantId },
     include: {
+      lsystem: true,
       inventory: { select: { stock: true } },
       userPlants: {
         where: { userId },
@@ -70,18 +72,30 @@ export async function getPlantById(plantId: string, userId: string) {
 
   return {
     id: plant.id,
-    commonName: plant.commonName,
+    name: plant.name,
     scientificName: plant.scientificName,
-    priceInCents: plant.priceInCents,
+    price: serializePrice(plant.price, plant.priceActive),
     description: plant.description,
     illustrationName: plant.illustrationName,
     ecologicalRole: plant.ecologicalRole,
     tempMin: plant.tempMin,
     tempMax: plant.tempMax,
     season: plant.season,
-    careInstructions: plant.careInstructions,
     growthMilestones: plant.growthMilestones,
     riddle: plant.riddle,
+    careInstructions: plant.careInstructions as string[],
+    lsystem: {
+      axiom: plant.lsystem.axiom,
+      rules: plant.lsystem.rules as Record<string, string>,
+      branchAngle: plant.lsystem.branchAngle,
+      baseThickness: plant.lsystem.baseThickness,
+      lengthMultiplier: plant.lsystem.lengthMultiplier,
+      leafScale: plant.lsystem.leafScale,
+      flowerScale: plant.lsystem.flowerScale,
+      stemColor: plant.lsystem.stemColor,
+      leafColor: plant.lsystem.leafColor,
+      flowerColor: plant.lsystem.flowerColor,
+    },
     stock: plant.inventory?.stock ?? 0,
     owned: plant.userPlants[0]?.owned ?? false,
     activatedAt: plant.userPlants[0]?.activatedAt ?? null,
@@ -104,7 +118,7 @@ export async function getPlantSeed(plantId: string, userId: string) {
 
   const plant = await prisma.plant.findUnique({
     where: { id: plantId },
-    include: { genetics: true },
+    include: { lsystem: true },
   });
 
   if (!plant) {
@@ -113,7 +127,7 @@ export async function getPlantSeed(plantId: string, userId: string) {
 
   return {
     plantId: plant.id,
-    seed: JSON.parse(plant.genetics.seedJson),
+    seed: JSON.parse(plant.lsystem.seedJson),
   };
 }
 
@@ -164,9 +178,9 @@ export async function getRecommendations(
     lon,
     recommendations: plants.map((p) => ({
       id: p.id,
-      commonName: p.commonName,
+      name: p.name,
       scientificName: p.scientificName,
-      priceInCents: p.priceInCents,
+      price: serializePrice(p.price, p.priceActive),
       illustrationName: p.illustrationName,
       stock: p.inventory?.stock ?? 0,
       owned: p.userPlants[0]?.owned ?? false,

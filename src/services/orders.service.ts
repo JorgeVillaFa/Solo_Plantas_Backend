@@ -12,12 +12,13 @@
 
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
+import { serializePrice } from '../utils'
 
 /**
  * Returns all orders for the authenticated user, newest first.
  */
 export async function getUserOrders(userId: string) {
-  return prisma.order.findMany({
+  const orders = await prisma.order.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     select: {
@@ -33,10 +34,11 @@ export async function getUserOrders(userId: string) {
       plant: {
         select: {
           id: true,
-          commonName: true,
+          name: true,
           scientificName: true,
           illustrationName: true,
-          priceInCents: true,
+          price: true,
+          priceActive: true
         },
       },
       nursery: {
@@ -44,6 +46,18 @@ export async function getUserOrders(userId: string) {
       },
     },
   });
+
+  // Serialize price on each order's plant
+  return orders.map((o) => ({
+    ...o,
+    plant: o.plant
+      ? {
+        ...o.plant,
+        price: serializePrice(o.plant.price, o.plant.priceActive),
+        priceActive: undefined,
+      }
+      : null,
+  }));
 }
 
 /**
@@ -67,7 +81,16 @@ export async function getOrderById(orderId: string, userId: string) {
     throw new AppError('Forbidden', 403);
   }
 
-  return order;
+  return {
+    ...order,
+    plant: order.plant
+      ? {
+        ...order.plant,
+        price: serializePrice(order.plant.price, order.plant.priceActive),
+        priceActive: undefined,
+      }
+      : null,
+  };
 }
 
 /**

@@ -64,32 +64,32 @@ model PlantGenetics {
 // Plants — Catalog
 // tempMin / tempMax used for climate-based recommendations
 // ===========================
+
 model Plant {
   id               String  @id @default(uuid()) @db.Uuid
-  commonName       String  @db.VarChar(255)
+  name             String  @db.VarChar(255)
   scientificName   String  @db.VarChar(255)
-  priceInCents     Int // Stored in MXN cents to avoid float issues
+  price            Int // Stored in MXN cents to avoid float issues
+  priceActive      Boolean @default(true) // false → API sends price: null to frontend
   description      String? @db.Text
   illustrationName String? @db.VarChar(255) // Name key for bundled illustration assets
-  ecologicalRole   String? @db.Text // Renamed from ecosystemNotes
+  ecologicalRole   String? @db.Text
   tempMin          Float // Minimum ideal temperature (°C)
   tempMax          Float // Maximum ideal temperature (°C)
-  season           String? @db.VarChar(50) // Human-readable bloom season e.g. "Blooms January–March"
-  seasonCategory   String? @db.VarChar(20) // 'spring' | 'summer' | 'fall' | 'winter' | null
-  growthType       String? @db.VarChar(50) // e.g. 'tall' | 'shrub' | 'vine' | 'ground'
-  dominantColor    String? @db.VarChar(50) // e.g. 'yellow' | 'pink' | 'white'
-  growthMilestones Int[] // Percentage milestones for growth animation [5, 20, 40, 70]
+  season           String? @db.VarChar(50)
+  seasonCategory   String? @db.VarChar(20) // 'spring' | 'summer' | 'fall' | 'winter'
+  growthType       String? @db.VarChar(50) // 'tall' | 'wide' | 'balanced'
+  dominantColor    String? @db.VarChar(50) // 'blue' | 'yellow' | 'purple' | 'green' | 'white' | 'orange'
+  growthMilestones Int[] // Percentage milestones for growth animation
   riddle           String? @db.Text // Riddle shown before the plant is identified
 
   // Care guide data
-  careInstructions String? @db.Text
+  careInstructions Json? // frontend decodes as [String]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
   lSeedId    String        @db.Uuid
-  genetics   PlantGenetics @relation(fields: [lSeedId], references: [id])
+  lsystem    PlantGenetics @relation(fields: [lSeedId], references: [id])
   inventory  Inventory?
   userPlants UserPlant[]
   orders     Order[]
