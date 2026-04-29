@@ -188,7 +188,11 @@ jobs:
       # Espera hasta ~3 minutos a que la app responda 200 en /health
       - name: Wait for health check
         run: |
-          APP_URL="https://${{ secrets.AZURE_APP_NAME }}.azurewebsites.net/health"
+          APP_URL=$(az webapp show \
+            --name "${{ secrets.AZURE_APP_NAME }}" \
+            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --query "defaultHostName" -o tsv)
+          APP_URL="https://${APP_URL}/health"
           echo "Polling $APP_URL ..."
           for i in $(seq 1 18); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
