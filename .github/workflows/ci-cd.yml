@@ -1,0 +1,210 @@
+# ===========================
+# Solo Plantas API — CI/CD Pipeline
+# Build Docker image → Push to Azure Container Registry → Deploy to Azure App Service
+#
+# Required GitHub Secrets:
+#   AZURE_CLIENT_ID            → Client ID de la Managed Identity (c561e60e-458d-48b7-9dc8-0ed0eb052ff3)
+#   AZURE_TENANT_ID            → Tenant ID de la Managed Identity (portal → Managed Identities → Overview)
+#   AZURE_SUBSCRIPTION_ID      → 3a4fb15c-0462-459f-9a70-935f5b852957
+#   ACR_LOGIN_SERVER           → e.g. soloplantasacr.azurecr.io
+#   ACR_USERNAME               → Admin username del ACR (portal → ACR → Access keys)
+#   ACR_PASSWORD               → Admin password del ACR (portal → ACR → Access keys)
+#   AZURE_APP_NAME             → Nombre exacto de tu App Service
+#   AZURE_RESOURCE_GROUP       → RG-just-plants-p2026
+#
+# Variables de entorno de producción — configurar en App Service → Configuration → Application settings:
+#   DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, OPENWEATHER_API_KEY
+# ===========================
+
+name: Build & Deploy to Azure App Service
+
+on:
+  push:
+    branches:
+      - main       # Production deploys
+      - develop    # Staging / smoke-test deploys
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  IMAGE_NAME: solo-plantas-api
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1 — Lint, type-check & test
+  # ─────────────────────────────────────────────
+  test:
+    name: Test & Type-check
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: soloplantasuser
+          POSTGRES_PASSWORD: soloplantaspass
+          POSTGRES_DB: soloplantasdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U soloplantasuser -d soloplantasdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://soloplantasuser:soloplantaspass@localhost:5432/soloplantasdb?schema=public
+      JWT_SECRET: ci-test-secret-not-used-in-prod
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      OPENWEATHER_API_KEY: placeholder
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Type-check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage --forceExit --passWithNoTests
+
+  # ─────────────────────────────────────────────
+  # JOB 2 — Build Docker image & push to ACR
+  # Solo corre en pushes a main o develop (no PRs)
+  # ─────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+
+    permissions:
+      id-token: write
+      contents: read
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push (production stage)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────
+  # JOB 3 — Deploy to Azure App Service
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Azure App Service
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push'
+
+    permissions:
+      id-token: write
+      contents: read
+
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    steps:
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update App Service container image
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+            FULL_IMAGE="${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG}"
+
+            echo "Deploying image: $FULL_IMAGE"
+
+            az webapp config container set \
+              --name "${{ secrets.AZURE_APP_NAME }}" \
+              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+              --docker-custom-image-name "$FULL_IMAGE" \
+              --docker-registry-server-url "https://${{ secrets.ACR_LOGIN_SERVER }}" \
+              --docker-registry-server-user "${{ secrets.ACR_USERNAME }}" \
+              --docker-registry-server-password "${{ secrets.ACR_PASSWORD }}"
+
+      - name: Restart App Service
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az webapp restart \
+              --name "${{ secrets.AZURE_APP_NAME }}" \
+              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}"
+
+      # Espera hasta ~3 minutos a que la app responda 200 en /health
+      - name: Wait for health check
+        run: |
+          APP_URL="https://${{ secrets.AZURE_APP_NAME }}.azurewebsites.net/health"
+          echo "Polling $APP_URL ..."
+          for i in $(seq 1 18); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
+            echo "Attempt $i — HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Health check timed out after 3 minutes."
+          exit 1
+
+      - name: Azure Logout
+        if: always()
+        run: az logout
