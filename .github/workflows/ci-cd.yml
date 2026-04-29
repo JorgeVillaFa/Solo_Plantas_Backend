@@ -150,9 +150,6 @@ jobs:
       id-token: write
       contents: read
 
-    environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-
     steps:
       - name: Azure Login (OIDC)
         uses: azure/login@v2
