@@ -196,6 +196,7 @@ jobs:
           echo "Polling $APP_URL ..."
           for i in $(seq 1 18); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL" || echo "000")
+            echo "Fetching $APP_URL"
             echo "Attempt $i — HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
               echo "App is healthy!"
