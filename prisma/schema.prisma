@@ -211,3 +211,31 @@ model Nursery {
 
   @@map("nurseries")
 }
+
+// ===========================
+// Chatbot — Conversation history
+// Each user can have multiple conversations; each conversation holds
+// an ordered list of user/assistant message turns.
+// ===========================
+model Conversation {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @db.Uuid
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model ChatMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  role           String       @db.VarChar(20) // 'user' | 'assistant'
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}

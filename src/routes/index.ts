@@ -23,6 +23,7 @@ import cartRoutes      from './cart.routes';
 import paymentsRoutes  from './payments.routes';
 import ordersRoutes    from './orders.routes';
 import nurseriesRoutes from './nurseries.routes';
+import chatRoutes      from './chat.routes';
 
 const router = Router();
 
@@ -32,5 +33,6 @@ router.use('/cart',      cartRoutes);
 router.use('/payments',  paymentsRoutes);
 router.use('/orders',    ordersRoutes);
 router.use('/nurseries', nurseriesRoutes);
+router.use('/chat',      chatRoutes);
 
 export default router;

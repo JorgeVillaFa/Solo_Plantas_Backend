@@ -45,6 +45,9 @@ export const env = {
   // ---- OpenWeather API (Climate recommendations) ----
   OPENWEATHER_API_KEY: optional('OPENWEATHER_API_KEY', ''),
 
+  // ---- OpenAI (Chatbot) ----
+  OPENAI_API_KEY: required('OPENAI_API_KEY'),
+
   // ---- Cart Reservations ----
   // How long (in minutes) cart reservations are held before being released
   CART_RESERVATION_MINUTES: parseInt(optional('CART_RESERVATION_MINUTES', '10'), 10),
