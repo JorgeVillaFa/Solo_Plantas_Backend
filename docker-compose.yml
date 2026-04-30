@@ -40,15 +40,16 @@ services:
     env_file:
       - .env                      # Load all environment variables from .env
     environment:
-      # Override DATABASE_URL to point at the docker service name "db"
+      # These override any values from .env inside the container
       DATABASE_URL: "postgresql://soloplantasuser:soloplantaspass@db:5432/soloplantasdb?schema=public"
+      PORT: "3000"
     ports:
       - "3000:3000"
     volumes:
       - ./src:/app/src             # Hot reload: mount source so ts-node-dev picks up changes
       - ./prisma:/app/prisma
     command: >
-      sh -c "npx prisma migrate dev --name init &&
+      sh -c "npx prisma migrate deploy &&
              npm run dev"
 
 volumes:

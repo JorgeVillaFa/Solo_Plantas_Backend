@@ -23,8 +23,8 @@ export const swaggerSpec = {
   },
   servers: [
     {
-      url: 'http://localhost:5001/api/v1',
-      description: 'Local development',
+      url: 'http://localhost:3000/api/v1',
+      description: 'Local development (Docker)',
     },
   ],
 
@@ -116,35 +116,43 @@ export const swaggerSpec = {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
-          commonName: { type: 'string', example: 'Primavera' },
+          name: { type: 'string', example: 'Primavera' },
           scientificName: { type: 'string', example: 'Roseodendron donnell-smithii' },
-          priceInCents: { type: 'integer', example: 29900, description: 'Price in MXN cents' },
+          price: { type: 'integer', example: 49900, description: 'Price in MXN cents' },
+          priceActive: { type: 'boolean', example: true, description: 'false → frontend shows price as null' },
           description: { type: 'string', nullable: true },
           illustrationName: { type: 'string', nullable: true },
+          dominantColor: { type: 'string', nullable: true, example: 'yellow' },
+          seasonCategory: { type: 'string', nullable: true, example: 'spring' },
+          growthType: { type: 'string', nullable: true, example: 'tall' },
           stock: { type: 'integer', example: 50 },
           owned: { type: 'boolean', example: false },
-          season: { type: 'string', nullable: true, example: 'spring' },
         },
       },
       PlantDetail: {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
-          commonName: { type: 'string' },
+          name: { type: 'string', example: 'Primavera' },
           scientificName: { type: 'string' },
-          priceInCents: { type: 'integer' },
+          price: { type: 'integer', description: 'Price in MXN cents' },
+          priceActive: { type: 'boolean' },
           description: { type: 'string', nullable: true },
+          ecologicalRole: { type: 'string', nullable: true },
           illustrationName: { type: 'string', nullable: true },
           tempMin: { type: 'number', example: 15 },
-          tempMax: { type: 'number', example: 35 },
-          season: { type: 'string', nullable: true },
+          tempMax: { type: 'number', example: 38 },
+          season: { type: 'string', nullable: true, example: 'Blooms January–March' },
+          seasonCategory: { type: 'string', nullable: true, example: 'spring' },
+          growthType: { type: 'string', nullable: true, example: 'tall' },
+          dominantColor: { type: 'string', nullable: true, example: 'yellow' },
+          growthMilestones: { type: 'array', items: { type: 'integer' }, example: [5, 20, 40, 70] },
+          riddle: { type: 'string', nullable: true },
           careInstructions: {
             type: 'array',
-            description: 'Detailed care guide for plant',
-            items: {
-              type: 'string',
-            },
-            nullable: true
+            items: { type: 'string' },
+            nullable: true,
+            description: 'Step-by-step care guide',
           },
           stock: { type: 'integer' },
           owned: { type: 'boolean' },
@@ -270,10 +278,10 @@ export const swaggerSpec = {
             type: 'object',
             properties: {
               id: { type: 'string', format: 'uuid' },
-              commonName: { type: 'string' },
+              name: { type: 'string' },
               scientificName: { type: 'string' },
               illustrationName: { type: 'string', nullable: true },
-              priceInCents: { type: 'integer' },
+              price: { type: 'integer', description: 'Price in MXN cents' },
             },
           },
           nursery: {
@@ -293,12 +301,49 @@ export const swaggerSpec = {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
-          name: { type: 'string', example: 'Vivero Tlaquepaque' },
-          address: { type: 'string', example: 'Av. Niños Héroes 1234, Tlaquepaque, Jalisco' },
-          lat: { type: 'number', example: 20.6414 },
-          lon: { type: 'number', example: -103.3082 },
-          schedule: { type: 'string', nullable: true, example: 'Lun-Vie 9am-6pm' },
+          name: { type: 'string', example: 'Bosque Urbano Extra A.C.' },
+          address: { type: 'string', example: 'Av. Patria 1000, Bosque Los Colomos, Guadalajara' },
+          description: { type: 'string', example: 'NGO offering free plant adoption with just your ID.' },
+          lat: { type: 'number', example: 20.709 },
+          lon: { type: 'number', example: -103.396 },
+          schedule: { type: 'string', nullable: true, example: 'Lun-Vie 9am-6pm, Sáb 9am-3pm' },
           phone: { type: 'string', nullable: true, example: '+52 33 1234 5678' },
+        },
+      },
+
+      // ---- Chat ----
+      ChatBody: {
+        type: 'object',
+        required: ['message'],
+        properties: {
+          message: {
+            type: 'string',
+            maxLength: 2000,
+            example: '¿Cuánto cuesta la Tronadora y cómo la cuido?',
+          },
+          conversationId: {
+            type: 'string',
+            format: 'uuid',
+            nullable: true,
+            description: 'Omitir en el primer mensaje; incluir para continuar una conversación existente.',
+          },
+        },
+      },
+      ChatResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          data: {
+            type: 'object',
+            properties: {
+              reply: { type: 'string', example: 'La Tronadora cuesta $249.00 MXN. Para cuidarla...' },
+              conversationId: {
+                type: 'string',
+                format: 'uuid',
+                description: 'Guarda este ID para continuar la conversación en el siguiente mensaje.',
+              },
+            },
+          },
         },
       },
     },
@@ -503,7 +548,7 @@ export const swaggerSpec = {
       post: {
         tags: ['Payments'],
         summary: 'Crear PaymentIntent',
-        description: 'Crea un Stripe PaymentIntent y un registro de orden pendiente. El `clientSecret` retornado se usa en el cliente iOS para completar el pago sin que datos de tarjeta toquen este servidor (PCI-DSS).',
+        description: 'Crea un Stripe PaymentIntent y un registro de orden pendiente. **Requiere una reserva de carrito activa** (`POST /cart/reserve`) para la planta — rechaza con 409 si no existe. El `clientSecret` retornado se usa en el cliente iOS para completar el pago sin que datos de tarjeta toquen este servidor (PCI-DSS).',
         security: [{ BearerAuth: [] }],
         requestBody: {
           required: true,
@@ -512,7 +557,8 @@ export const swaggerSpec = {
         responses: {
           201: { description: 'PaymentIntent creado', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaymentIntentResponse' } } } },
           401: { description: 'No autenticado' },
-          404: { description: 'Planta no encontrada' },
+          404: { description: 'Planta o inventario no encontrado' },
+          409: { description: 'Sin reserva activa, planta con precio desactivado o stock insuficiente' },
           422: { description: 'Validación fallida' },
           503: { description: 'Stripe no configurado' },
         },
@@ -626,6 +672,37 @@ export const swaggerSpec = {
     },
 
     // =========================
+    // CHAT
+    // =========================
+    '/chat': {
+      post: {
+        tags: ['Chat'],
+        summary: 'Enviar mensaje a SolBot',
+        description:
+          'Envía un mensaje al asistente de Solo Plantas (SolBot). ' +
+          'SolBot solo responde preguntas relacionadas con la app: catálogo de plantas, ' +
+          'cuidados, viveros, órdenes y pagos. ' +
+          'El historial de conversación se guarda en el servidor — incluye `conversationId` ' +
+          'para continuar una sesión existente. ' +
+          'Responde en el idioma del mensaje.',
+        security: [{ BearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/ChatBody' } } },
+        },
+        responses: {
+          200: {
+            description: 'Respuesta del asistente',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ChatResponse' } } },
+          },
+          401: { description: 'No autenticado' },
+          404: { description: 'conversationId no encontrado o no pertenece al usuario' },
+          422: { description: 'Validación fallida (message vacío o mayor a 2000 caracteres)' },
+        },
+      },
+    },
+
+    // =========================
     // NURSERIES
     // =========================
     '/nurseries': {
@@ -661,6 +738,7 @@ export const swaggerSpec = {
     { name: 'Payments', description: 'Stripe PaymentIntent y webhook' },
     { name: 'Orders', description: 'Historial de órdenes y activación por QR' },
     { name: 'Nurseries', description: 'Puntos de recolección para MapKit' },
+    { name: 'Chat', description: 'SolBot — asistente conversacional con historial multi-turn' },
   ],
 };
 
