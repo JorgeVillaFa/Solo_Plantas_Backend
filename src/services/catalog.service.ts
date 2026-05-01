@@ -15,7 +15,7 @@ import axios from 'axios';
 import { prisma } from '../config/database';
 import { env } from '../config/env';
 import { AppError } from '../middlewares/error.middleware';
-import { serializePrice } from '../utils'
+import { serializePrice } from '../utils/price.utils'
 
 /**
  * Returns all plants with inventory status and whether the user owns each one.

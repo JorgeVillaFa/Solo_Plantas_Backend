@@ -1,11 +1,11 @@
-/*
- * src/utils.ts
+/**
+ * src/utils/price.utils.ts
  * ===========================
- * Shared utility functions used in services.
+ * Price serialization for API responses.
  * ===========================
  */
 
-/*
+/**
  * Converts price from MXN cents (Int) to pesos (Double) for iOS.
  * Returns null if priceActive is false.
 */

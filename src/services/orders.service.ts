@@ -12,7 +12,7 @@
 
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
-import { serializePrice } from '../utils'
+import { serializePrice } from '../utils/price.utils'
 
 /**
  * Returns all orders for the authenticated user, newest first.
