@@ -7,8 +7,8 @@
  * This service only creates PaymentIntents and processes webhook confirmations.
  *
  * Flow:
- *   1. Client calls POST /payments/intent → server creates Stripe PaymentIntent
- *   2. Client uses clientSecret to complete payment on-device
+ *   1. Client calls POST /payments/checkout-session → server creates Stripe Session URL
+ *   2. Client opens URL in SafariViewController
  *   3. Stripe calls POST /payments/webhook → server confirms order + unlocks plant
  * ===========================
  */
@@ -35,7 +35,7 @@ function getStripe(): Stripe {
 const DELIVERY_FEE_CENTS = 9900; // $99 MXN
 
 /**
- * Creates a Stripe PaymentIntent for purchasing a plant.
+ * Creates a Stripe Checkout Session for purchasing a plant.
  * Also creates a pending Order record.
  *
  * @param userId        Authenticated user
@@ -44,7 +44,7 @@ const DELIVERY_FEE_CENTS = 9900; // $99 MXN
  * @param nurseryId     Required when shippingType === 'pickup'
  * @param address       Required when shippingType === 'delivery'
  */
-export async function createPaymentIntent(
+export async function createCheckoutSession(
   userId: string,
   plantId: string,
   shippingType: ShippingType,
@@ -93,16 +93,25 @@ export async function createPaymentIntent(
   const shippingFeeCents = shippingType === 'delivery' ? DELIVERY_FEE_CENTS : 0;
   const totalAmountCents = plant.price + shippingFeeCents;
 
-  // Create Stripe PaymentIntent
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: totalAmountCents,
-    currency: 'mxn',
+  // Create Stripe Checkout Session
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'payment',
+    line_items: [
+      {
+        price_data: {
+          currency: 'mxn',
+          product_data: {
+            name: `Solo Plantas — ${plant.name}`,
+          },
+          unit_amount: totalAmountCents,
+        },
+        quantity: 1,
+      },
+    ],
     metadata: { userId, plantId },
-    description: `Solo Plantas — ${plant.name}`,
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: 'never',
-    },
+    success_url: `https://solo-plantas-success.com`, // Dummy success URL since SafariView closes
+    cancel_url: `https://solo-plantas-cancel.com`,
   });
 
   // Persist pending order
@@ -114,7 +123,7 @@ export async function createPaymentIntent(
       shippingType,
       totalAmountCents,
       shippingFeeCents,
-      stripePaymentIntentId: paymentIntent.id,
+      stripePaymentIntentId: session.id, // Reusing column for sessionId
       nurseryId: shippingType === 'pickup' ? nurseryId : null,
       shippingAddress:
         shippingType === 'delivery' && address
@@ -124,7 +133,7 @@ export async function createPaymentIntent(
   });
 
   return {
-    clientSecret: paymentIntent.client_secret,
+    url: session.url,
     orderId: order.id,
     totalAmountCents,
   };
@@ -134,7 +143,7 @@ export async function createPaymentIntent(
  * Handles Stripe webhook events.
  * Verifies the webhook signature before processing.
  *
- * On payment_intent.succeeded:
+ * On checkout.session.completed:
  *   - Updates order status to 'confirmed'
  *   - Moves inventory from reserved → sold
  *   - Creates/updates UserPlant record with owned=true
@@ -156,14 +165,14 @@ export async function handleWebhook(
     throw new AppError('Invalid webhook signature', 400);
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object as Stripe.PaymentIntent;
-    await confirmPayment(intent.id);
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await confirmPayment(session.id);
   }
 
-  if (event.type === 'payment_intent.payment_failed') {
-    const intent = event.data.object as Stripe.PaymentIntent;
-    await cancelPayment(intent.id);
+  if (event.type === 'checkout.session.expired') {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await cancelPayment(session.id);
   }
 }
 

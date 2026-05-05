@@ -3,7 +3,7 @@
  * ===========================
  * Stripe payment routes.
  *
- *   POST /intent    — Create PaymentIntent + pending Order (auth required)
+ *   POST /checkout-session — Create Checkout Session + pending Order (auth required)
  *   POST /webhook   — Stripe event webhook (public, raw body, no auth)
  * ===========================
  */
@@ -16,9 +16,9 @@ import * as paymentsController from '../controllers/payments.controller';
 
 const router = Router();
 
-// ---- POST /intent (protected) ----
+// ---- POST /checkout-session (protected) ----
 router.post(
-  '/intent',
+  '/checkout-session',
   authenticate,
   [
     body('plantId').isUUID().withMessage('plantId must be a valid UUID'),
@@ -31,7 +31,7 @@ router.post(
       .withMessage('nurseryId must be a valid UUID'),
   ],
   validate,
-  paymentsController.createIntent
+  paymentsController.createCheckoutSession
 );
 
 // ---- POST /webhook (public — Stripe sends events here) ----

@@ -4,8 +4,8 @@
  * Stripe payments route handlers.
  *
  * Routes:
- *   POST /api/v1/payments/intent    — Create PaymentIntent (auth required)
- *   POST /api/v1/payments/confirm   — Manual confirm (optional, for testing)
+ *   POST /api/v1/payments/checkout-session — Create Checkout Session (auth required)
+ *   POST /api/v1/payments/confirm          — Manual confirm (optional, for testing)
  *   POST /api/v1/payments/webhook   — Stripe webhook (no auth, raw body)
  * ===========================
  */
@@ -16,11 +16,11 @@ import { sendCreated, sendSuccess, sendError } from '../utils/response.utils';
 import * as paymentsService from '../services/payments.service';
 
 /**
- * POST /api/v1/payments/intent
- * Creates a Stripe PaymentIntent and a pending Order.
+ * POST /api/v1/payments/checkout-session
+ * Creates a Stripe Checkout Session and a pending Order.
  * Body: { plantId, shippingType, nurseryId?, address? }
  */
-export async function createIntent(
+export async function createCheckoutSession(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -29,7 +29,7 @@ export async function createIntent(
     const userId = req.user!.userId;
     const { plantId, shippingType, nurseryId, address } = req.body;
 
-    const result = await paymentsService.createPaymentIntent(
+    const result = await paymentsService.createCheckoutSession(
       userId,
       plantId,
       shippingType,
