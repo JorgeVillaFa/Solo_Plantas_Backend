@@ -23,6 +23,7 @@ import { serializePrice } from '../utils/price.utils'
 export async function getAllPlants(userId: string) {
   const plants = await prisma.plant.findMany({
     include: {
+      lsystem: true,
       inventory: {
         select: { stock: true },
       },
@@ -47,6 +48,23 @@ export async function getAllPlants(userId: string) {
     season: p.season,
     growthType: p.growthType,
     dominantColor: p.dominantColor,
+    ecologicalRole: p.ecologicalRole,
+    careInstructions: p.careInstructions as string[],
+    seasonCategory: p.seasonCategory,
+    riddle: p.riddle,
+    growthMilestones: p.growthMilestones,
+    lsystem: p.lsystem ? {
+      axiom: p.lsystem.axiom,
+      rules: p.lsystem.rules as Record<string, string>,
+      branchAngle: p.lsystem.branchAngle,
+      baseThickness: p.lsystem.baseThickness,
+      lengthMultiplier: p.lsystem.lengthMultiplier,
+      leafScale: p.lsystem.leafScale,
+      flowerScale: p.lsystem.flowerScale,
+      stemColor: p.lsystem.stemColor,
+      leafColor: p.lsystem.leafColor,
+      flowerColor: p.lsystem.flowerColor,
+    } : null
   }));
 }
 
