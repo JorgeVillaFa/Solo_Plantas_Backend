@@ -10,7 +10,7 @@
  */
 
 import Stripe from 'stripe';
-import { createPaymentIntent, handleWebhook } from '../services/payments.service';
+import { createCheckoutSession, handleWebhook } from '../services/payments.service';
 import { prisma } from '../config/database';
 import { AppError } from '../middlewares/error.middleware';
 
@@ -34,12 +34,12 @@ jest.mock('../config/env', () => ({
 }));
 
 // Mock the Stripe constructor and the methods we care about
-const mockPaymentIntentsCreate = jest.fn();
+const mockSessionsCreate = jest.fn();
 const mockConstructEvent = jest.fn();
 
 jest.mock('stripe', () => {
     return jest.fn().mockImplementation(() => ({
-        paymentIntents: { create: mockPaymentIntentsCreate },
+        checkout: { sessions: { create: mockSessionsCreate } },
         webhooks: { constructEvent: mockConstructEvent },
     }));
 });
@@ -79,7 +79,7 @@ function makeStripeEvent(
     return {
         type,
         data: {
-            object: { id: intentId } as Stripe.PaymentIntent,
+            object: { id: intentId } as Stripe.Checkout.Session,
         },
     } as Stripe.Event;
 }
@@ -91,8 +91,8 @@ const PLANT_ID = '00000000-0000-0000-0000-000000000001';
 const INVENTORY_ID = '00000000-0000-0000-0000-000000000002';
 const ORDER_ID = '00000000-0000-0000-0000-000000000003';
 const RESERVATION_ID = '00000000-0000-0000-0000-000000000004';
-const PAYMENT_INTENT_ID = 'pi_123';
-const CLIENT_SECRET = 'pi_123_secret';
+const SESSION_ID = 'cs_123';
+const SESSION_URL = 'https://stripe.com/checkout/cs_123';
 
 
 const basePlant = {
@@ -121,16 +121,16 @@ const baseOrder = {
     userId: USER_ID,
     plantId: PLANT_ID,
     status: 'pending',
-    stripePaymentIntentId: PAYMENT_INTENT_ID,
+    stripePaymentIntentId: SESSION_ID,
 };
 
-// ── createPaymentIntent ────────────────────────────────────────────────────
+// ── createCheckoutSession ────────────────────────────────────────────────────
 
-describe('createPaymentIntent', () => {
+describe('createCheckoutSession', () => {
     beforeEach(() => {
-        mockPaymentIntentsCreate.mockResolvedValue({
-            id: PAYMENT_INTENT_ID,
-            client_secret: CLIENT_SECRET,
+        mockSessionsCreate.mockResolvedValue({
+            id: SESSION_ID,
+            url: SESSION_URL,
         });
         (mockedPrisma.order.create as jest.Mock).mockResolvedValue({
             id: ORDER_ID,
@@ -144,30 +144,39 @@ describe('createPaymentIntent', () => {
             (mockedPrisma.cartReservation.findFirst as jest.Mock).mockResolvedValue(baseReservation);
         });
 
-        it('returns clientSecret, orderId, and totalAmountCents', async () => {
-            const result = await createPaymentIntent(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
+        it('returns url, orderId, and totalAmountCents', async () => {
+            const result = await createCheckoutSession(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
 
             expect(result).toEqual({
-                clientSecret: CLIENT_SECRET,
+                url: SESSION_URL,
                 orderId: ORDER_ID,
                 totalAmountCents: basePlant.price, // no delivery fee
             });
         });
 
-        it('creates a PaymentIntent with the correct amount, currency, and metadata', async () => {
-            await createPaymentIntent(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
+        it('creates a Checkout Session with the correct amount, currency, and metadata', async () => {
+            await createCheckoutSession(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
 
-            expect(mockPaymentIntentsCreate).toHaveBeenCalledWith(
+            expect(mockSessionsCreate).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    amount: basePlant.price,
-                    currency: 'mxn',
+                    mode: 'payment',
+                    line_items: [
+                        {
+                            price_data: {
+                                currency: 'mxn',
+                                product_data: { name: `Solo Plantas — ${basePlant.name}` },
+                                unit_amount: basePlant.price,
+                            },
+                            quantity: 1,
+                        },
+                    ],
                     metadata: { userId: USER_ID, plantId: PLANT_ID },
                 })
             );
         });
 
         it('creates the order with status "pending" and correct fields', async () => {
-            await createPaymentIntent(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
+            await createCheckoutSession(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
 
             expect(mockedPrisma.order.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -176,7 +185,7 @@ describe('createPaymentIntent', () => {
                         plantId: PLANT_ID,
                         status: 'pending',
                         shippingType: 'pickup',
-                        stripePaymentIntentId: PAYMENT_INTENT_ID,
+                        stripePaymentIntentId: SESSION_ID,
                         nurseryId: 'nursery-1',
                         shippingAddress: null,
                     }),
@@ -185,7 +194,7 @@ describe('createPaymentIntent', () => {
         });
 
         it('sets shippingFeeCents to 0 for pickup orders', async () => {
-            await createPaymentIntent(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
+            await createCheckoutSession(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
 
             expect(mockedPrisma.order.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -205,13 +214,13 @@ describe('createPaymentIntent', () => {
         });
 
         it('adds the delivery fee to totalAmountCents', async () => {
-            const result = await createPaymentIntent(USER_ID, PLANT_ID, 'delivery', undefined, address);
+            const result = await createCheckoutSession(USER_ID, PLANT_ID, 'delivery', undefined, address);
 
             expect(result.totalAmountCents).toBe(basePlant.price + 9900);
         });
 
         it('sets shippingFeeCents to 9900 for delivery orders', async () => {
-            await createPaymentIntent(USER_ID, PLANT_ID, 'delivery', undefined, address);
+            await createCheckoutSession(USER_ID, PLANT_ID, 'delivery', undefined, address);
 
             expect(mockedPrisma.order.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -221,7 +230,7 @@ describe('createPaymentIntent', () => {
         });
 
         it('serializes and stores the shipping address', async () => {
-            await createPaymentIntent(USER_ID, PLANT_ID, 'delivery', undefined, address);
+            await createCheckoutSession(USER_ID, PLANT_ID, 'delivery', undefined, address);
 
             expect(mockedPrisma.order.create).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -239,7 +248,7 @@ describe('createPaymentIntent', () => {
             (mockedPrisma.plant.findUnique as jest.Mock).mockResolvedValue(null);
 
             await expect(
-                createPaymentIntent(USER_ID, PLANT_ID, 'pickup')
+                createCheckoutSession(USER_ID, PLANT_ID, 'pickup')
             ).rejects.toThrow(new AppError('Plant not found', 404));
         });
 
@@ -250,7 +259,7 @@ describe('createPaymentIntent', () => {
             });
 
             await expect(
-                createPaymentIntent(USER_ID, PLANT_ID, 'pickup')
+                createCheckoutSession(USER_ID, PLANT_ID, 'pickup')
             ).rejects.toThrow(new AppError('This plant is not available for purchase', 409));
         });
 
@@ -259,7 +268,7 @@ describe('createPaymentIntent', () => {
             (mockedPrisma.inventory.findUnique as jest.Mock).mockResolvedValue(null);
 
             await expect(
-                createPaymentIntent(USER_ID, PLANT_ID, 'pickup')
+                createCheckoutSession(USER_ID, PLANT_ID, 'pickup')
             ).rejects.toThrow(new AppError('Plant inventory not found', 404));
         });
 
@@ -269,16 +278,16 @@ describe('createPaymentIntent', () => {
             (mockedPrisma.cartReservation.findFirst as jest.Mock).mockResolvedValue(null);
 
             await expect(
-                createPaymentIntent(USER_ID, PLANT_ID, 'pickup')
+                createCheckoutSession(USER_ID, PLANT_ID, 'pickup')
             ).rejects.toThrow(new AppError('No active cart reservation found. Add the plant to your cart before checking out.', 409));
         });
 
-        it('does not create a PaymentIntent or Order when a guard throws', async () => {
+        it('does not create a CheckoutSession or Order when a guard throws', async () => {
             (mockedPrisma.plant.findUnique as jest.Mock).mockResolvedValue(null);
 
-            await expect(createPaymentIntent(USER_ID, PLANT_ID, 'pickup')).rejects.toThrow();
+            await expect(createCheckoutSession(USER_ID, PLANT_ID, 'pickup')).rejects.toThrow();
 
-            expect(mockPaymentIntentsCreate).not.toHaveBeenCalled();
+            expect(mockSessionsCreate).not.toHaveBeenCalled();
             expect(mockedPrisma.order.create).not.toHaveBeenCalled();
         });
 
@@ -288,7 +297,7 @@ describe('createPaymentIntent', () => {
             (mockedPrisma.cartReservation.findFirst as jest.Mock).mockResolvedValue(baseReservation);
 
             const before = new Date();
-            await createPaymentIntent(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
+            await createCheckoutSession(USER_ID, PLANT_ID, 'pickup', 'nursery-1');
 
             const reservationCall = (mockedPrisma.cartReservation.findFirst as jest.Mock).mock.calls[0][0];
             expect(reservationCall.where.userId).toBe(USER_ID);
@@ -315,7 +324,7 @@ describe('handleWebhook', () => {
     });
 
     it('verifies the signature using the raw body and signature header', async () => {
-        mockConstructEvent.mockReturnValue(makeStripeEvent('unknown.event', PAYMENT_INTENT_ID));
+        mockConstructEvent.mockReturnValue(makeStripeEvent('unknown.event', SESSION_ID));
 
         await handleWebhook(RAW_BODY, SIGNATURE);
 
@@ -323,19 +332,19 @@ describe('handleWebhook', () => {
     });
 
     it('resolves without error for unhandled event types', async () => {
-        mockConstructEvent.mockReturnValue(makeStripeEvent('customer.created', PAYMENT_INTENT_ID));
+        mockConstructEvent.mockReturnValue(makeStripeEvent('customer.created', SESSION_ID));
 
         await expect(handleWebhook(RAW_BODY, SIGNATURE)).resolves.not.toThrow();
     });
 
-    // ── confirmPayment (via payment_intent.succeeded) ────────────────────────
+    // ── confirmPayment (via checkout.session.completed) ────────────────────────
 
-    describe('payment_intent.succeeded', () => {
+    describe('checkout.session.completed', () => {
         let tx: MockTx;
 
         beforeEach(() => {
             mockConstructEvent.mockReturnValue(
-                makeStripeEvent('payment_intent.succeeded', PAYMENT_INTENT_ID)
+                makeStripeEvent('checkout.session.completed', SESSION_ID)
             );
             (mockedPrisma.order.findFirst as jest.Mock).mockResolvedValue(baseOrder);
 
@@ -395,7 +404,7 @@ describe('handleWebhook', () => {
             expect(mockedPrisma.$transaction).not.toHaveBeenCalled();
         });
 
-        it('skips the transaction when no order is found for the PaymentIntent', async () => {
+        it('skips the transaction when no order is found for the CheckoutSession', async () => {
             (mockedPrisma.order.findFirst as jest.Mock).mockResolvedValue(null);
 
             await handleWebhook(RAW_BODY, SIGNATURE);
@@ -411,23 +420,23 @@ describe('handleWebhook', () => {
             expect(tx.cartReservation.deleteMany).not.toHaveBeenCalled();
         });
 
-        it('looks up the order by stripePaymentIntentId', async () => {
+        it('looks up the order by stripePaymentIntentId (which stores sessionId)', async () => {
             await handleWebhook(RAW_BODY, SIGNATURE);
 
             expect(mockedPrisma.order.findFirst).toHaveBeenCalledWith({
-                where: { stripePaymentIntentId: PAYMENT_INTENT_ID },
+                where: { stripePaymentIntentId: SESSION_ID },
             });
         });
     });
 
-    // ── cancelPayment (via payment_intent.payment_failed) ───────────────────
+    // ── cancelPayment (via checkout.session.expired) ───────────────────
 
-    describe('payment_intent.payment_failed', () => {
+    describe('checkout.session.expired', () => {
         let tx: MockTx;
 
         beforeEach(() => {
             mockConstructEvent.mockReturnValue(
-                makeStripeEvent('payment_intent.payment_failed', PAYMENT_INTENT_ID)
+                makeStripeEvent('checkout.session.expired', SESSION_ID)
             );
             (mockedPrisma.order.findFirst as jest.Mock).mockResolvedValue(baseOrder);
 
@@ -481,7 +490,7 @@ describe('handleWebhook', () => {
             expect(mockedPrisma.$transaction).not.toHaveBeenCalled();
         });
 
-        it('skips the transaction when no order is found for the PaymentIntent (idempotency)', async () => {
+        it('skips the transaction when no order is found for the CheckoutSession (idempotency)', async () => {
             (mockedPrisma.order.findFirst as jest.Mock).mockResolvedValue(null);
 
             await handleWebhook(RAW_BODY, SIGNATURE);
