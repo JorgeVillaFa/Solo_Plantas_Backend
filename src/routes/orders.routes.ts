@@ -19,7 +19,9 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', ordersController.listOrders);
+router.get('/all', ordersController.listAllOrders);
 router.get('/:id', ordersController.getOrder);
+router.patch('/:id/status', ordersController.updateOrderStatus);
 router.post('/:id/activate', ordersController.activateOrder);
 
 export default router;

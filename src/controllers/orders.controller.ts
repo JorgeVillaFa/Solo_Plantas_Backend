@@ -34,6 +34,23 @@ export async function listOrders(
 }
 
 /**
+ * GET /api/v1/orders/all
+ * Returns all orders in the system (Wild West Mode).
+ */
+export async function listAllOrders(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const orders = await ordersService.getAllOrders();
+    sendSuccess(res, orders);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
  * GET /api/v1/orders/:id
  * Returns detail for a specific order.
  */
@@ -64,6 +81,24 @@ export async function activateOrder(
     const userId = req.user!.userId;
     const result = await ordersService.activateOrder(req.params.id, userId);
     sendSuccess(res, result, 'Order activated');
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * PATCH /api/v1/orders/:id/status
+ * Updates the status of an order.
+ */
+export async function updateOrderStatus(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { status } = req.body;
+    const order = await ordersService.updateOrderStatus(req.params.id, status);
+    sendSuccess(res, order);
   } catch (err) {
     next(err);
   }
