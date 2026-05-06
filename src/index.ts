@@ -38,6 +38,8 @@ import { swaggerSpec, swaggerUiOptions } from './config/swagger';
 import apiRoutes from './routes/index';
 
 const app = express();
+// Trust proxy headers (X-Forwarded-For, etc.) since we expect to run behind a reverse proxy in production (e.g., Azure App Services)
+app.set('trust proxy', 1);
 
 // ---- Security Middleware ----
 
@@ -60,6 +62,11 @@ const authLimiter = rateLimit({
   message: { success: false, error: 'Too many requests. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    // Elimina el puerto si viene en formato "1.2.3.4:5678"
+    return ip.replace(/:\d+$/, '');
+  }
 });
 
 // ---- Logging ----
